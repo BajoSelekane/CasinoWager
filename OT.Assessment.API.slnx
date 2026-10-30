@@ -5,4 +5,5 @@
     <Project Path="../OT.Assessment.Infrastructure/OT.Assessment.Infrastructure.csproj" />
     <Project Path="OT.Assessment.API.csproj" />
   </Folder>
+  <Folder Name="/tests/" />
 </Solution>
