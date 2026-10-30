@@ -1,6 +1,65 @@
 @OT.Assessment.API_HostAddress = http://localhost:5070
+@token = paste-access-token-here
+@playerId = paste-account-id-here
 
-GET {{OT.Assessment.API_HostAddress}}/weatherforecast/
+### Register a player account
+POST {{OT.Assessment.API_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "player@example.com",
+  "username": "demo-player",
+  "password": "replace-with-a-strong-password"
+}
+
+### Sign in to an existing player account
+POST {{OT.Assessment.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "player@example.com",
+  "password": "replace-with-a-strong-password"
+}
+
+### Get the authenticated account
+GET {{OT.Assessment.API_HostAddress}}/api/auth/me
+Authorization: Bearer {{token}}
 Accept: application/json
 
-###
+### Submit a casino wager
+POST {{OT.Assessment.API_HostAddress}}/api/player/casinowager
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "wagerId": "10000000-0000-0000-0000-000000000010",
+  "theme": "classic",
+  "provider": "ExampleProvider",
+  "gameName": "Example Slots",
+  "transactionId": "20000000-0000-0000-0000-000000000010",
+  "brandId": "30000000-0000-0000-0000-000000000001",
+  "accountId": "{{playerId}}",
+  "username": "demo-player",
+  "externalReferenceId": "50000000-0000-0000-0000-000000000010",
+  "transactionTypeId": "60000000-0000-0000-0000-000000000001",
+  "amount": 25.50,
+  "createdDateTime": "2026-10-30T12:00:00Z",
+  "numberOfBets": 1,
+  "countryCode": "US",
+  "sessionData": null,
+  "duration": 30
+}
+
+### Get wagers for the authenticated player
+GET {{OT.Assessment.API_HostAddress}}/api/player/{{playerId}}/casino?page=1&pageSize=10
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Get top spenders (Admin or RiskAnalyst only)
+GET {{OT.Assessment.API_HostAddress}}/api/player/topSpenders?count=10
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Check API and database health
+GET {{OT.Assessment.API_HostAddress}}/health
+Accept: application/json
