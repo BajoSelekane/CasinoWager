@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../OT.Assessment.Application/OT.Assessment.Application.csproj" />
+    <Project Path="../OT.Assessment.Domain/OT.Assessment.Domain.csproj" />
+    <Project Path="../OT.Assessment.Infrastructure/OT.Assessment.Infrastructure.csproj" />
     <Project Path="OT.Assessment.API.csproj" />
   </Folder>
 </Solution>
