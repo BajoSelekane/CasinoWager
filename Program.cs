@@ -97,7 +97,7 @@ app.MapGet("/api/player/{playerId:guid}/casino", async (Guid playerId, int? page
 }).RequireAuthorization("WagerRead");
 
 app.MapGet("/api/player/topSpenders", async (int? count, ISender sender, CancellationToken ct) => Results.Ok(await sender.Send(new GetTopSpendersQuery(count ?? 10), ct))).RequireAuthorization("Reporting");
-app.MapHealthChecks("/health").AllowAnonymous();
+//app.MapHealthChecks("/health").AllowAnonymous();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

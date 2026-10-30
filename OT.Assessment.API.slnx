@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/src/">
-    <File Path="../../../Downloads/OT.Assessment.App/OT.Assessment.App/docker-compose.yml" />
+    <File Path="docker-compose.yml" />
     <Project Path="../OT.Assessment.Application/OT.Assessment.Application.csproj" />
     <Project Path="../OT.Assessment.Domain/OT.Assessment.Domain.csproj" />
     <Project Path="../OT.Assessment.Infrastructure/OT.Assessment.Infrastructure.csproj" />
