@@ -60,6 +60,20 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.ConsumedMessages', N'U') IS NULL
+BEGIN
+	CREATE TABLE dbo.ConsumedMessages
+	(
+		MessageId uniqueidentifier NOT NULL,
+		EventType nvarchar(max) NOT NULL,
+		Payload nvarchar(max) NOT NULL,
+		ReceivedAt datetimeoffset NOT NULL,
+
+		CONSTRAINT PK_ConsumedMessages PRIMARY KEY CLUSTERED (MessageId)
+	);
+END;
+GO
+
 IF NOT EXISTS
 (
 	SELECT 1

@@ -4,6 +4,9 @@
     <Project Path="../OT.Assessment.Domain/OT.Assessment.Domain.csproj" />
     <Project Path="../OT.Assessment.Infrastructure/OT.Assessment.Infrastructure.csproj" />
     <Project Path="OT.Assessment.API.csproj" />
+    <Project Path="../src/OT.Assessment.Consumer/OT.Assessment.Consumer.csproj" />
   </Folder>
-  <Folder Name="/tests/" />
+  <Folder Name="/tests/">
+    <Project Path="../tests/OT.Assessment.Tester/OT.Assessment.Tester.csproj" />
+  </Folder>
 </Solution>

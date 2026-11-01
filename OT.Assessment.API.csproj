@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
     <UserSecretsId>6159ab28-7dd9-4e58-8a2e-f0a5c73d72e7</UserSecretsId>
   </PropertyGroup>
 

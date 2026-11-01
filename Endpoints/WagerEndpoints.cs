@@ -9,20 +9,21 @@ namespace OT.Assessment.API.Endpoints;
 
 public static class WagerEndpoints
 {
-    public static void MapWagerEndpoints(this WebApplication app)
+    public static void MapWagerEndpoints(this WebApplication app, bool enableAnonymousWagerLoadTesting)
     {
-        app.MapPost("/api/player/casinowager", async Task<Results<Accepted<WagerAcceptedResponse>, ForbidHttpResult>> (
+        var wagerSubmission = app.MapPost("/api/player/casinowager", async Task<Results<Accepted<WagerAcceptedResponse>, ForbidHttpResult>> (
             CreateWagerRequest request,
             HttpContext httpContext,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
-            if (!Guid.TryParse(GetSubject(httpContext.User), out var subject)
-                || subject != request.AccountId
-                || !string.Equals(
-                    httpContext.User.FindFirstValue("name"),
-                    request.Username,
-                    StringComparison.Ordinal))
+            if (!enableAnonymousWagerLoadTesting
+                && (!Guid.TryParse(GetSubject(httpContext.User), out var subject)
+                    || subject != request.AccountId
+                    || !string.Equals(
+                        httpContext.User.FindFirstValue("name"),
+                        request.Username,
+                        StringComparison.Ordinal)))
             {
                 return TypedResults.Forbid();
             }
@@ -49,14 +50,27 @@ public static class WagerEndpoints
                 $"/api/player/{request.AccountId}/casino",
                 new WagerAcceptedResponse(wagerId, "accepted"));
         })
-            .RequireAuthorization("WagerWrite")
-            .RequireRateLimiting("wagers")
             .WithName("CreateCasinoWager")
             .WithSummary("Submit a casino wager")
-            .WithDescription("Accepts a wager for the authenticated player and queues it for publication.")
+            .WithDescription(enableAnonymousWagerLoadTesting
+                ? "Development-only load-test mode: accepts anonymous wagers and queues them for publication."
+                : "Accepts a wager for the authenticated player and queues it for publication.")
             .Produces<WagerAcceptedResponse>(StatusCodes.Status202Accepted)
             .Produces(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status400BadRequest);
+
+        if (enableAnonymousWagerLoadTesting)
+        {
+            wagerSubmission
+                .AllowAnonymous()
+                .RequireRateLimiting("wager-load-test");
+        }
+        else
+        {
+            wagerSubmission
+                .RequireAuthorization("WagerWrite")
+                .RequireRateLimiting("wagers");
+        }
 
         app.MapGet("/api/player/{playerId:guid}/casino", async Task<Results<Ok<PagedResult<WagerDto>>, ForbidHttpResult>> (
             Guid playerId,

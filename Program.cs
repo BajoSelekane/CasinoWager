@@ -15,6 +15,14 @@ using OT.Assessment.Domain.Models;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+var enableAnonymousWagerLoadTesting =
+    builder.Configuration.GetValue<bool>("DevelopmentFeatures:EnableAnonymousWagerLoadTesting");
+
+if (enableAnonymousWagerLoadTesting && !builder.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException(
+        "Anonymous wager load testing can only be enabled in the Development environment.");
+}
 
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Set Jwt:Key.");
@@ -76,9 +84,18 @@ builder.Services.AddRateLimiter(options =>
         limiter.Window = TimeSpan.FromMinutes(1);
         limiter.QueueLimit = 0;
     });
+    options.AddPolicy("wager-load-test", context =>
+        RateLimitPartition.GetConcurrencyLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 80,
+                QueueLimit = 7000,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+            }));
 });
 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContextPool<AppDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddSingleton<IPasswordHasher<UserAccount>, PasswordHasher<UserAccount>>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<WagerRepository>();
@@ -89,7 +106,10 @@ builder.Services.AddMediatR(configuration =>
 builder.Services.AddHostedService(services => new OutboxPublisher(
     services.GetRequiredService<IServiceScopeFactory>(),
     services.GetRequiredService<ILogger<OutboxPublisher>>(),
-    builder.Configuration["RabbitMq:Host"] ?? "localhost"));
+    builder.Configuration["RabbitMq:Host"] ?? "localhost",
+    builder.Configuration["RabbitMq:UserName"] ?? "guest",
+    builder.Configuration["RabbitMq:Password"] ?? "guest",
+    builder.Configuration["RabbitMq:Queue"] ?? "casino.wagers"));
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
 
 builder.Services.AddProblemDetails();
@@ -125,7 +145,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapAuthenticationEndpoints();
-app.MapWagerEndpoints();
+app.MapWagerEndpoints(enableAnonymousWagerLoadTesting);
 app.MapHealthChecks("/health").AllowAnonymous();
 
 app.Run();
