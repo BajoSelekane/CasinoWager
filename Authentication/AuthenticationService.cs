@@ -26,21 +26,30 @@ public sealed class AuthenticationService(
         var normalizedEmail = email.ToUpperInvariant();
         var normalizedUsername = username.ToUpperInvariant();
 
-        if (await db.UserAccounts.AnyAsync(
-                account => account.NormalizedEmail == normalizedEmail
-                    || account.NormalizedUsername == normalizedUsername,
-                cancellationToken))
+        var existingAccount = await db.Database
+            .SqlQuery<int>($"EXEC dbo.usp_UserAccountExists {normalizedEmail}, {normalizedUsername}")
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (existingAccount != 0)
         {
             return null;
         }
 
         var account = new UserAccount(email, normalizedEmail, username, normalizedUsername);
         account.SetPasswordHash(passwordHasher.HashPassword(account, request.Password));
-        db.UserAccounts.Add(account);
 
         try
         {
-            await db.SaveChangesAsync(cancellationToken);
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $@"EXEC dbo.usp_CreateUserAccount
+                    {account.Id},
+                    {account.Email},
+                    {account.NormalizedEmail},
+                    {account.Username},
+                    {account.NormalizedUsername},
+                    {account.PasswordHash},
+                    {account.CreatedAt}",
+                cancellationToken);
         }
         catch (DbUpdateException exception) when (
             exception.InnerException is SqlException { Number: 2601 or 2627 })
@@ -56,9 +65,9 @@ public sealed class AuthenticationService(
         CancellationToken cancellationToken)
     {
         var normalizedEmail = request.Email.Trim().ToUpperInvariant();
-        var account = await db.UserAccounts.SingleOrDefaultAsync(
-            candidate => candidate.NormalizedEmail == normalizedEmail,
-            cancellationToken);
+        var account = await db.UserAccounts
+            .FromSqlInterpolated($"EXEC dbo.usp_GetUserAccountByEmail {normalizedEmail}")
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (account is null)
         {
@@ -77,7 +86,9 @@ public sealed class AuthenticationService(
         if (verification == PasswordVerificationResult.SuccessRehashNeeded)
         {
             account.SetPasswordHash(passwordHasher.HashPassword(account, request.Password));
-            await db.SaveChangesAsync(cancellationToken);
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $@"EXEC dbo.usp_UpdateUserPasswordHash {account.Id}, {account.PasswordHash}",
+                cancellationToken);
         }
 
         return CreateAuthenticationResponse(account);
